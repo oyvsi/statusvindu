@@ -163,7 +163,9 @@ if (count($known_hosts) > 0) {
 
 <div id="frame">
 <div class="section">
+<div class="section_header">
 <p class="totals"><b>Total:</b> <?php foreach($service_summary as $state => $count) { echo "<span class='{$nagios_service_status_colour[$state]}'>{$count}</span> "; } ?><span class="section_title">Services</span></p>
+</div>
 <?php if (count($broken_services) > 0) {  uasort($broken_services, 'compare');?>
 	<table class="widetable" id="broken_services">
 		<tr><th width="30%">Hostname</th><th width="40%">Service</th><th width="15%">State</th><th width="10%">Down Since</th><th width="5%">Attempt</th></tr>

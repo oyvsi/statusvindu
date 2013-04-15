@@ -32,7 +32,7 @@ $curl_stats = array();
 // Function that does the dirty to connect to the Nagios API
 function fetchStatus($APIhost,$target, $query) {
 	$statusDecoded = json_decode(file_get_contents("http://$APIhost/icinga-web/web/api/{$target}/$query"));
-     	if(!$statusDecoded) die("<div class='status_red'>Error with $target . ' query </div>");
+   if(!$statusDecoded) die("<div class='status_red'>Error with $target query </div>");
 	if($statusDecoded->success !== 'true') die("<div class='status_red'>{$statusDecoded->errors[0]}</div>");
 	$vars = get_object_vars($statusDecoded);
 
@@ -42,10 +42,6 @@ function fetchStatus($APIhost,$target, $query) {
 	$hosts = fetchStatus($APIhost, "host", $hostTotalQuery);
 	$services = fetchStatus($APIhost, "service", $serviceTotalQuery);
 	
-	if(!($hosts && $services)) {
-		die("Error with queries!");
-	}
-
 	$hostArray = fetchStatus($APIhost, "host", $hostQuery);
 	$serviceArray = fetchStatus($APIhost, "service", $serviceQuery);
 	
@@ -57,17 +53,20 @@ function fetchStatus($APIhost,$target, $query) {
 		$service_summary[$service->{'SERVICE_CURRENT_STATE'}] += 1;
 	}
 
-// Sort the array alphabetically by hostname. 
 
+function serviceCompare($x, $y) {
+    #return ($x['state'] < $y['state']) ? 1 : -1;
+	  return 1;
+	}
 
 // At this point, the data collection is completed. 
 
 
-if (count($errors) > 0) {
+/*if (count($errors) > 0) {
 	foreach ($errors as $error) {
 		echo "<div class='status_red'>{$error}</div>";
 	}
-}
+}*/
 
 foreach($hostArray["result"] as $host_details) {
 	$host_attributes = get_object_vars($host_details);
@@ -79,7 +78,7 @@ foreach($hostArray["result"] as $host_details) {
 	// Populate the array. 
 	array_push($$array_name, array(
 				"hostname" => $host_attributes['HOST_NAME'],
-				"host_state" => $host_attributes['HOST_CURRENT_STATE'],
+				"state" => $host_attributes['HOST_CURRENT_STATE'],
 				"duration" => $host_attributes['HOST_LAST_STATE_CHANGE'],
 				"detail" => $host_attributes['HOST_OUTPUT'],
 				"current_attempt" => $host_attributes['HOST_CURRENT_CHECK_ATTEMPT'],
@@ -108,7 +107,7 @@ foreach($serviceArray['result'] as $service_detail) {
 	array_push($$array_name, array(
 				"hostname" => $service_attributes['HOST_NAME'],
 				"service_name" => $service_attributes['SERVICE_NAME'],
-				"service_state" => $service_attributes['SERVICE_CURRENT_STATE'],
+				"state" => $service_attributes['SERVICE_CURRENT_STATE'],
 				"duration" => $service_attributes['SERVICE_LAST_STATE_CHANGE'],
 				"detail" => $service_attributes['SERVICE_OUTPUT'],
 				"current_attempt" => $service_attributes['SERVICE_CURRENT_CHECK_ATTEMPT'],
@@ -126,16 +125,15 @@ foreach($serviceArray['result'] as $service_detail) {
 <div id="info-window"><button class="close" onClick='$("#info-window").fadeOut("fast");'>&times;</button><div id="info-window-text"></div></div>
 <div id="frame">
 <div class="section">
-<h3>Hosts</h3>
-<p class="totals"><b>Total:</b> <?php foreach($host_summary as $state => $count) { echo "<span class='{$nagios_host_status_colour[$state]}'>{$count}</span> "; } ?></p>
-<?php if (count($down_hosts) > 0) { ?>
+<p class="totals"><b>Hosts total:</b> <?php foreach($host_summary as $state => $count) { echo "<span class='{$nagios_host_status_colour[$state]}'>{$count}</span> "; } ?></p>
+<?php if (count($down_hosts) > 0) {  uasort($down_hosts, 'hostCompare');?>
 	<table id="broken_hosts" class="widetable">
 		<tr><th>Hostname</th><th width="150px">State</th><th>Down Since</th><th>Attempt</th><th>Detail</th></tr>
 		<?php
 		foreach($down_hosts as $host) {
-			echo "<tr id='host_row' class='{$nagios_host_status_colour[$host['host_state']]}'>";
+			echo "<tr id='host_row' class='{$nagios_host_status_colour[$host['state']]}'>";
 			echo "<td>{$host['hostname']}</td>";
-			echo "<td>{$nagios_host_status[$host['host_state']]}</td>"; 
+			echo "<td>{$nagios_host_status[$host['state']]}</td>"; 
 			echo "<td>{$host['duration']}</td>";
 			echo "<td>{$host['current_attempt']}/{$host['max_attempts']}</td>";
 			echo "<td class=\"desc\">{$host['detail']}</td>";
@@ -165,9 +163,8 @@ if (count($known_hosts) > 0) {
 
 <div id="frame">
 <div class="section">
-<h3>Services</h3>
-<p class="totals"><b>Total:</b> <?php foreach($service_summary as $state => $count) { echo "<span class='{$nagios_service_status_colour[$state]}'>{$count}</span> "; } ?></p>
-<?php if (count($broken_services) > 0) { ?>
+<p class="totals"><b>Total:</b> <?php foreach($service_summary as $state => $count) { echo "<span class='{$nagios_service_status_colour[$state]}'>{$count}</span> "; } ?><span class="section_title">Services</span></p>
+<?php if (count($broken_services) > 0) {  uasort($broken_services, 'compare');?>
 	<table class="widetable" id="broken_services">
 		<tr><th width="30%">Hostname</th><th width="40%">Service</th><th width="15%">State</th><th width="10%">Down Since</th><th width="5%">Attempt</th></tr>
 		<?php
@@ -176,8 +173,8 @@ if (count($known_hosts) > 0) {
 			/*$controls = build_controls($service['tag'], $service['hostname'], $service['service_name']); */
 			echo "<tr>";
 			echo "<td>{$service['hostname']} " . /*<span class='controls'>{$controls}</span>*/"</td>";
-			echo "<td class='{$nagios_service_status_colour[$service['service_state']]}'>{$service['service_name']} - {$service['detail']}</td>";
-			echo "<td class='{$nagios_service_status_colour[$service['service_state']]}'>{$nagios_service_status[$service['service_state']]} {$soft_tag}</td>";
+			echo "<td class='{$nagios_service_status_colour[$service['state']]}'>{$service['service_name']} - {$service['detail']}</td>";
+			echo "<td class='{$nagios_service_status_colour[$service['state']]}'>{$nagios_service_status[$service['state']]} {$soft_tag}</td>";
 			echo "<td>{$service['duration']}</td>";
 			echo "<td>{$service['current_attempt']}/{$service['max_attempts']}</td>";
 			echo "</tr>";

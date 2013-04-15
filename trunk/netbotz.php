@@ -4,7 +4,7 @@ require_once 'config.php';
 
 function check_sensor($query, $type, $dummydata) {
 	if($dummydata) {
-	 return array(array('name' => 1, 'data' => 12), array('name' => 2, 'data' => 12), array('name' => 4, 'data' => 12), array('name' => 5, 'data' => 12)); 
+	 return array(array('name' => 1, 'data' => 19), array('name' => 2, 'data' => 18), array('name' => 4, 'data' => 23), array('name' => 5, 'data' => 24)); 
 	}
 
 	$result = json_decode(file_get_contents($query));

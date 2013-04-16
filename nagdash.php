@@ -54,12 +54,15 @@ function fetchStatus($APIhost,$target, $query) {
 	}
 
 
-function serviceCompare($x, $y) {
-    #return ($x['state'] < $y['state']) ? 1 : -1;
-	  return 1;
-	}
+function hostCompare($x, $y) {
+	if($x['state'] != 1 && $y['state'] == 1) return 1;
 
-// At this point, the data collection is completed. 
+}
+
+function serviceCompare($x, $y) {
+	return ($x['state'] < $y['state']) ? 1 : -1;
+}
+
 
 
 /*if (count($errors) > 0) {
@@ -89,6 +92,8 @@ foreach($hostArray["result"] as $host_details) {
 				"is_ack" => ($host_attributes['HOST_PROBLEM_HAS_BEEN_ACKNOWLEDGED'] > 0) ? true : false,
 				"is_enabled" => ($host_attributes['HOST_NOTIFICATIONS_ENABLED'] > 0) ? true : false,
 				)); 
+
+
 }
 // In any case, increment the overall status counters.
 //        $host_summary = $hostArray['total'];
@@ -125,7 +130,7 @@ foreach($serviceArray['result'] as $service_detail) {
 <div id="info-window"><button class="close" onClick='$("#info-window").fadeOut("fast");'>&times;</button><div id="info-window-text"></div></div>
 <div id="frame">
 <div class="section">
-<p class="totals"><b>Hosts total:</b> <?php foreach($host_summary as $state => $count) { echo "<span class='{$nagios_host_status_colour[$state]}'>{$count}</span> "; } ?></p>
+<p class="totals"><span class="section_title">Hosts</span><span class="total_count"><?php foreach($host_summary as $state => $count) { echo "<span class='{$nagios_host_status_colour[$state]}'>{$count}</span> "; } ?></span></p>
 <?php if (count($down_hosts) > 0) {  uasort($down_hosts, 'hostCompare');?>
 	<table id="broken_hosts" class="widetable">
 		<tr><th>Hostname</th><th width="150px">State</th><th>Down Since</th><th>Attempt</th><th>Detail</th></tr>
@@ -163,10 +168,8 @@ if (count($known_hosts) > 0) {
 
 <div id="frame">
 <div class="section">
-<div class="section_header">
-<p class="totals"><b>Total:</b> <?php foreach($service_summary as $state => $count) { echo "<span class='{$nagios_service_status_colour[$state]}'>{$count}</span> "; } ?><span class="section_title">Services</span></p>
-</div>
-<?php if (count($broken_services) > 0) {  uasort($broken_services, 'compare');?>
+<p class="totals"><span class="section_title">Services</span><span class="total_count"><?php foreach($service_summary as $state => $count) { echo "<span class='{$nagios_service_status_colour[$state]}'>{$count}</span> "; } ?></span></p>
+<?php if (count($broken_services) > 0) {  uasort($broken_services, 'serviceCompare');?>
 	<table class="widetable" id="broken_services">
 		<tr><th width="30%">Hostname</th><th width="40%">Service</th><th width="15%">State</th><th width="10%">Down Since</th><th width="5%">Attempt</th></tr>
 		<?php
